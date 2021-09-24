@@ -4,4 +4,5 @@
   com.github.seancorfield/next.jdbc {:mvn/version "1.2.709"}
   cli-matic/cli-matic {:mvn/version "0.4.3"}
   org.xerial/sqlite-jdbc {:mvn/version "3.36.0.3"}
-  org.postgresql/postgresql {:mvn/version "42.2.23"}}}
+  org.postgresql/postgresql {:mvn/version "42.2.23"}
+  org.mariadb.jdbc/mariadb-java-client {:mvn/version "2.7.4"}}}
