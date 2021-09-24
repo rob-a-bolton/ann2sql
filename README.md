@@ -9,7 +9,7 @@ This was created specifically for working with MIMIC-III data.
 
 ## Usage
 
-`clj -m ann2sql.core --jdbc 'jdbc:postgresql://localhost/annotations?user=myuser&password=mypass' import --dir ./some/data-dir/`
+`clj -m ann2sql.core --jdbc 'jdbc:postgresql://localhost/annotations?user=myuser&password=mypass' import --dir ./some/data-dir/`  
 Any JDBC string may be used but only the postgres and sqlite drivers have been included in the project deps.  
 The dir option specifies where to find the files.  
 Expected format of files is that each file stores the annotations for a single document.  
