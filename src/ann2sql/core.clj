@@ -2,8 +2,6 @@
   (:require [cheshire.core :as cheshire]
             [cli-matic.core :refer [run-cmd]]
             [clojure.java.io :as io]
-            [clojure.spec.alpha :as s]
-            [clojure.string :as str]
             [honey.sql :as sql]
             [next.jdbc :as jdbc]))
 
