@@ -110,5 +110,5 @@ Instead a blank node could be used, but there is still no way to associate it wi
 
 Storing per-annotation data together requires a node, necessitating iteration over the child objects. Iterating over the child objects prevents linking to the parent objects (in the absence of a unique ID).
 
-To get around this, `ann2sql` exists to store annotation data in a SQL database.  
-Each row contains an annotation along with the `hadm_id` and `row_id` (admission ID, noteevents document ID).  
+To get around this, `ann2sql` exists to annotate data and store in a SQL database,
+such that it may be translated from RML to an RDF graph easily.
