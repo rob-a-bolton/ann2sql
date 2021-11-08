@@ -2,50 +2,56 @@
 
 ## What is this?
 
-A quick script to load [MedCAT](https://github.com/CogStack/MedCAT/) annotations into a database via JDBC.  
+A quick script to use [MedCATservice](https://github.com/CogStack/MedCATservice) to annotate documents store in a SQL database.  
 This exists as limitations of [RML](https://rml.io/) and [JSON Path](https://datatracker.ietf.org/wg/jsonpath/about/) intersect to cause an issue for importing certain data.  
+For this reason it is necessary store the annotations in a database rather than attempt to use RML on the annotation JSON returned from MedCATservice.  
 
-This was created specifically for working with MIMIC-III data.  
+This should work for any dataset but has only been tested against MIMIC-III and the [n2c2 Track 1: Cohort Selection for Clinical Trials](https://portal.dbmi.hms.harvard.edu/projects/n2c2-2018-t1/) data.
 
 ## Usage
 
-`clj -m ann2sql.core --jdbc 'jdbc:postgresql://localhost/annotations?user=myuser&password=mypass' import --dir ./some/data-dir/`  
-Any JDBC string may be used but only the postgres and sqlite drivers have been included in the project deps.  
-The dir option specifies where to find the files.  
-Expected format of files is that each file stores the annotations for a single document.  
-The application walks the filesystem path recursively so the files may be in any hierarchy under `dir` but ensure that no other files exist there other than the correctly formatted JSON annotation files.
+The following example shows how to annotate documents stored in a Postgres database and output to a sqlite db:  
+`clj -M -m ann2sql.core -s 'jdbc:postgresql://localhost/mimic?user=username&password=password' -d 'jdbc:sqlite:output.db' -S train -D train_out -c pat_id -c doc_id -t text --drop-tables --create-tables`  
 
-Please note that any user may read your process' command line args. Connecting to a database with this application *WILL* leak your DB username/password to any user/process on the system that's looking for it.  
-This may be fixed in the future but the app is currently run on a single-user PC against a local DB for the purpose of research.  
-Should anybody wish to use the script and they have concerns about, submit an issue and it shall be fixed.
+This would run across the rows of an input table like this:
+| pat_id | doc_id |             text |
+|--------|--------|------------------|
+|      0 |      0 | "ankle improved" |
+|      0 |      1 |     "ambulation" |
 
-Necessary fields:
-```json
-{
-  "hadm_id": "<admission ID>",
-  "row_id": "<noteevents row ID>",
-  "annotations": [
-    {
-      // fields output by MedCATService
-      "tui": "<tui>",
-      "cui": "<cui>",
-      "start": "<char offset substring start>",
-      "end": "<char offset substring end>",
-      "acc": "<accuracy, a double>",
-      "source_value": "<substring matched/extracted>",
-      "meta_anns": {
-        "status": {
-          "name": "Status",
-          "value": "<status value>"
-        }
-      }
-    }
-  ]
-}
-```
+and produce an output table like this:
+| pat_id | doc_id | seq_id |      cui | source_value | m_start | m_end |          acc |
+|--------|--------|--------|----------|--------------|---------|-------|--------------|
+|      0 |      0 |      0 | C0003086 |      "ankle" |       0 |     6 |         0.99 |
+|      0 |      0 |      1 | C4321457 |   "improved" |       7 |    15 | 0.2744009742 |
+|      0 |      1 |      0 | C0080331 | "ambulation" |       0 |    10 |         0.99 |
 
+Command-line options:
 
++ **-u**, **--medcat-url**, URL for MedCATservice. Default: *http://127.0.0.1:5000/api/process_bulk*
++ **-s**, **--src-jdbc**, JDBC connection string for source database
++ **-d**, **--dst-jdbc**, JDBC connection string for destination database
++ **-S**, **--src-table**, Table in source database containing data
++ **-D**, **--dst-table**,  Table to insert annotations to in destination database
++ **-c**, **--src-columns**, Columns in source data to preserve when storing in destination
++ **-t**, **--text-column**,  Column containing text to annotate
++ **-b**, **--src-batch-size**, Number of source documents to annotate at once. Default: 100
++ **-B**, **--dst-batch-size**, Number of annotation results to batch for writing to database. Default: 1000
++ **--drop-tables**, Whether to drop the output annotation table before starting.
++ **--create-tables**, Whether to create the output annotation table before starting (if-not-exists)
+
+> *Note: for --src-jdbc and --dst-dbc, the environment variables SRC_JDBC and DST_JDBC may be used instead*
+
+The script will attempt to guess the right datatype to use for storing a double.
+It also attempts to guess how to translate the *--src-columns* fields to the
+output database.  
+Neither of these actions are perfect. You can avoid both these issues by not
+using the *--create-tables* option and ensuring the output table exists before
+running the script.
 ## Why
+
+Ideally a script would capture the JSON output from MedCATservice and use RML to
+convert this directly to an RDF graph, but that's not possible.
 
 RML requires an iterator to create resources. It's typical in JSON to nest data such that a "root" object has an array of child objects which represent some associated data e.g.
 
