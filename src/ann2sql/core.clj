@@ -6,7 +6,8 @@
             [honey.sql :as sql]
             [honey.sql.helpers :as h]
             [next.jdbc :as jdbc]
-            [next.jdbc.result-set :as result-set]))
+            [next.jdbc.result-set :as result-set])
+  (:gen-class))
 
 (defn float-type
   "Try to guess the best column type for the database.
@@ -75,6 +76,12 @@
   [jdbc-str db-con table cols]
   (row->col-defs jdbc-str (get-single-row db-con table cols)))
 
+(defn clean-bulk-results
+  [results]
+  (if (string? (first results))
+    (map #(cheshire.core/parse-string % true) results)
+    results))
+
 (defn process-bulk
   "Given a MedCATservice process_bulk endpoint URL and sequence of documents,
    annotate the documents and return the raw annotation maps."
@@ -84,7 +91,8 @@
                            {:content (map (fn [text] {:text text}) texts)})
                     :content-type :json
                     :as :json})
-      (get-in [:body :result])))
+      (get-in [:body :result])
+      clean-bulk-results))
 
 (defn get-bulk-annotations
   "Given the MedCATservice bulk endpoint URL and sequence of documents,
